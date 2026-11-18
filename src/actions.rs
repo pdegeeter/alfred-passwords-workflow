@@ -37,6 +37,11 @@ pub enum Action {
         domain: String,
         username: String,
     },
+    /// Copy the account's current one-time (TOTP) code.
+    CopyOtp {
+        domain: String,
+        username: String,
+    },
     Generate {
         style: Style,
     },
@@ -72,7 +77,8 @@ impl Action {
 
         match self {
             Action::CopyPassword { domain, username }
-            | Action::CopyUsername { domain, username } => {
+            | Action::CopyUsername { domain, username }
+            | Action::CopyOtp { domain, username } => {
                 variables.push((VAR_DOMAIN, domain.clone()));
                 variables.push((VAR_USERNAME, username.clone()));
             }
@@ -113,6 +119,10 @@ impl Action {
                 domain: required(VAR_DOMAIN)?,
                 username: required(VAR_USERNAME)?,
             },
+            "copy-otp" => Action::CopyOtp {
+                domain: required(VAR_DOMAIN)?,
+                username: required(VAR_USERNAME)?,
+            },
             "generate" => Action::Generate { style: style()? },
             "generate-and-save" => Action::GenerateAndSave {
                 domain: required(VAR_DOMAIN)?,
@@ -133,6 +143,7 @@ impl Action {
         match self {
             Action::CopyPassword { domain, .. }
             | Action::CopyUsername { domain, .. }
+            | Action::CopyOtp { domain, .. }
             | Action::GenerateAndSave { domain, .. } => Some(domain),
             Action::Generate { .. }
             | Action::CopyGenerated { .. }
@@ -145,6 +156,7 @@ impl Action {
         match self {
             Action::CopyPassword { .. } => "copy-password",
             Action::CopyUsername { .. } => "copy-username",
+            Action::CopyOtp { .. } => "copy-otp",
             Action::Generate { .. } => "generate",
             Action::GenerateAndSave { .. } => "generate-and-save",
             Action::CopyGenerated { .. } => "copy-generated",
@@ -167,6 +179,12 @@ pub fn run(action: &Action, ctx: &Context) -> Result<String> {
             ctx.clipboard.copy(username, false)?;
 
             Ok(format!("Username {username} ({domain}) copied"))
+        }
+        Action::CopyOtp { domain, username } => {
+            let code = ctx.apw.one_time_code(domain, username).map_err(explain)?;
+            ctx.clipboard.copy(&code, true)?;
+
+            Ok(format!("One-time code of {username} ({domain}) copied"))
         }
         Action::Generate { style } => {
             let password = (ctx.generate)(style)?;

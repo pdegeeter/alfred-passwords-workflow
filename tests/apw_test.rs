@@ -201,6 +201,82 @@ fn password_with_no_results_is_an_error() {
     );
 }
 
+/// What `apw otp get github.com` prints for two accounts with TOTP.
+const TWO_CODES: &str = r#"{"results":[
+    {"username":"pdegeeter","domain":"github.com","source":"totp","code":"123456"},
+    {"username":"Toelath","domain":"github.com","source":"totp","code":"654321"}
+],"status":0}"#;
+
+#[test]
+fn one_time_code_returns_the_requested_account_code() {
+    let runner = FakeRunner::new().with_success("otp get github.com", TWO_CODES);
+
+    let code = Apw::new(&runner, BIN)
+        .one_time_code("github.com", "Toelath")
+        .unwrap();
+
+    assert_eq!(code, "654321");
+}
+
+#[test]
+fn one_time_code_never_returns_another_account_code_among_several() {
+    let runner = FakeRunner::new().with_success("otp get github.com", TWO_CODES);
+
+    let err = Apw::new(&runner, BIN)
+        .one_time_code("github.com", "nobody")
+        .unwrap_err();
+
+    assert_eq!(
+        err,
+        ApwError::Failed("No one-time code for nobody on github.com".to_owned())
+    );
+}
+
+#[test]
+fn one_time_code_falls_back_to_the_only_code() {
+    let runner = FakeRunner::new().with_success(
+        "otp get github.com",
+        r#"{"results":[{"username":"Me","domain":"github.com","code":"111222"}],"status":0}"#,
+    );
+
+    let code = Apw::new(&runner, BIN)
+        .one_time_code("github.com", "me")
+        .unwrap();
+
+    assert_eq!(code, "111222");
+}
+
+#[test]
+fn one_time_code_without_any_code_is_an_error() {
+    let no_code = FakeRunner::new().with_success(
+        "otp get github.com",
+        r#"{"results":[{"username":"me","domain":"github.com","source":"totp"}],"status":0}"#,
+    );
+    let no_results = FakeRunner::new().with_failure("otp get github.com", NO_RESULTS);
+
+    for runner in [no_code, no_results] {
+        let err = Apw::new(&runner, BIN)
+            .one_time_code("github.com", "me")
+            .unwrap_err();
+
+        assert_eq!(
+            err,
+            ApwError::Failed("No one-time code for me on github.com".to_owned())
+        );
+    }
+}
+
+#[test]
+fn one_time_code_reports_an_unpaired_daemon() {
+    let runner = FakeRunner::new().with_failure("otp get github.com", UNPAIRED);
+
+    let err = Apw::new(&runner, BIN)
+        .one_time_code("github.com", "me")
+        .unwrap_err();
+
+    assert_eq!(err, ApwError::NotPaired);
+}
+
 #[test]
 fn save_sends_the_password_on_stdin_only() {
     let runner = FakeRunner::new().with_success("pw save --stdin github.com me", r#"{"status":0}"#);

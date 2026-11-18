@@ -28,6 +28,16 @@
 				<key>vitoclose</key>
 				<false/>
 			</dict>
+			<dict>
+				<key>destinationuid</key>
+				<string>B3000000-0000-0000-0000-0000000000B3</string>
+				<key>modifiers</key>
+				<integer>524288</integer>
+				<key>modifiersubtext</key>
+				<string>Copy the one-time code</string>
+				<key>vitoclose</key>
+				<false/>
+			</dict>
 		</array>
 		<key>A5000000-0000-0000-0000-0000000000A5</key>
 		<array>
@@ -220,7 +230,7 @@
 		</dict>
 	</array>
 	<key>readme</key>
-	<string>Type `pw` followed by a domain (github.com) to list its accounts: ↵ copies the password, ⌘↵ the username. Type `pwg` to generate a strong password, or `pwg &lt;domain&gt; &lt;username&gt;` to also save it; `pwg` also lists the last 20 generated passwords. Options change one generation: a length (4-40), `apple`, `+l`/`-l` letters, `+d`/`-d` digits, `+s`/`-s` symbols, `+a`/`-a` look-alikes (`pwg 24 -s`). Defaults are in Configure Workflow.
+	<string>Type `pw` followed by a domain (github.com) to list its accounts: ↵ copies the password, ⌘↵ the username, ⌥↵ the one-time code. Type `pwg` to generate a strong password, or `pwg &lt;domain&gt; &lt;username&gt;` to also save it; `pwg` also lists the last 20 generated passwords. Options change one generation: a length (4-40), `apple`, `+l`/`-l` letters, `+d`/`-d` digits, `+s`/`-s` symbols, `+a`/`-a` look-alikes (`pwg 24 -s`). Defaults are in Configure Workflow.
 
 Passwords are copied straight to the clipboard, marked concealed so clipboard histories skip them; they never go through Alfred. Generated passwords are kept in an encrypted file whose key is in your login Keychain.
 

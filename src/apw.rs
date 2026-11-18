@@ -66,6 +66,9 @@ struct Entry {
     title: Option<String>,
     #[serde(default)]
     password: Option<String>,
+    /// The current one-time code, from `apw otp get`.
+    #[serde(default)]
+    code: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -155,6 +158,34 @@ impl<'a> Apw<'a> {
         exact
             .or_else(|| entries.iter().find(|entry| entry.password.is_some()))
             .and_then(|entry| entry.password.clone())
+            .ok_or_else(missing)
+    }
+
+    /// The current one-time (TOTP) code of `username` on `domain`.
+    ///
+    /// `apw otp get` returns a code for every account of the domain. Another
+    /// account's code is only used when it is the only one, so a domain with
+    /// several accounts never yields the wrong code.
+    pub fn one_time_code(&self, domain: &str, username: &str) -> Result<String, ApwError> {
+        let missing = || ApwError::Failed(format!("No one-time code for {username} on {domain}"));
+
+        let Some(stdout) = self.call(&["otp", "get", domain], None)? else {
+            return Err(missing());
+        };
+        let entries = Apw::parse_entries(&stdout)?;
+        let with_code: Vec<&Entry> = entries
+            .iter()
+            .filter(|entry| entry.code.as_deref().is_some_and(|code| !code.is_empty()))
+            .collect();
+
+        let entry = match with_code.iter().find(|entry| entry.username == username) {
+            Some(entry) => Some(*entry),
+            None if with_code.len() == 1 => Some(with_code[0]),
+            None => None,
+        };
+
+        entry
+            .and_then(|entry| entry.code.clone())
             .ok_or_else(missing)
     }
 

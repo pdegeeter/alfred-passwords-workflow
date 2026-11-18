@@ -10,7 +10,7 @@ use alfred_passwords::apw::{Apw, ApwError};
 use alfred_passwords::generator::{Rules, Style};
 use alfred_passwords::history::{Entry, History};
 use anyhow::{anyhow, Result};
-use common::{FakeClipboard, FakeRunner, FakeVault, LoadMode, NOT_RUNNING, UNPAIRED};
+use common::{FakeClipboard, FakeRunner, FakeVault, LoadMode, NOT_RUNNING, NO_RESULTS, UNPAIRED};
 
 const BIN: &str = "apw";
 const NOW: u64 = 1_800_000_000;
@@ -72,6 +72,10 @@ fn every_action_round_trips_through_its_variables() {
             username: account().1,
         },
         Action::CopyUsername {
+            domain: account().0,
+            username: account().1,
+        },
+        Action::CopyOtp {
             domain: account().0,
             username: account().1,
         },
@@ -163,6 +167,46 @@ fn copy_password_copies_a_concealed_password() {
     );
     // Fetched passwords are not generated ones: not kept in the history.
     assert_eq!(vault.saves.get(), 0);
+}
+
+#[test]
+fn copy_otp_copies_a_concealed_code_and_counts_as_a_domain_use() {
+    let runner = FakeRunner::new().with_success(
+        "otp get github.com",
+        r#"{"results":[{"username":"me","domain":"github.com","code":"123456"}],"status":0}"#,
+    );
+    let clipboard = FakeClipboard::new();
+    let vault = FakeVault::new(History::default());
+    let action = Action::CopyOtp {
+        domain: "github.com".to_owned(),
+        username: "me".to_owned(),
+    };
+
+    let message = run(&action, &runner, &clipboard, &vault).unwrap();
+
+    assert_eq!(message, "One-time code of me (github.com) copied");
+    assert_eq!(
+        *clipboard.copies.borrow(),
+        vec![("123456".to_owned(), true)]
+    );
+    assert_eq!(action.domain(), Some("github.com"));
+    assert_eq!(vault.saves.get(), 0);
+}
+
+#[test]
+fn copy_otp_explains_a_missing_code() {
+    let runner = FakeRunner::new().with_failure("otp get github.com", NO_RESULTS);
+    let clipboard = FakeClipboard::new();
+    let vault = FakeVault::new(History::default());
+    let action = Action::CopyOtp {
+        domain: "github.com".to_owned(),
+        username: "me".to_owned(),
+    };
+
+    let err = run(&action, &runner, &clipboard, &vault).unwrap_err();
+
+    assert_eq!(err.to_string(), "No one-time code for me on github.com");
+    assert!(clipboard.copies.borrow().is_empty());
 }
 
 #[test]

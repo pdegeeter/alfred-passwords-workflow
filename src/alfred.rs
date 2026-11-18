@@ -252,6 +252,10 @@ fn account_item(account: Account) -> Item {
         domain: account.domain.clone(),
         username: account.username.clone(),
     };
+    let otp = Action::CopyOtp {
+        domain: account.domain.clone(),
+        username: account.username.clone(),
+    };
     let context = match &account.title {
         Some(title) => format!("{} · {title}", account.domain),
         None => account.domain.clone(),
@@ -259,7 +263,9 @@ fn account_item(account: Account) -> Item {
 
     action_item(
         Item::new(account.username.clone())
-            .subtitle(format!("{context} · ↵ copy password · ⌘↵ copy username"))
+            .subtitle(format!(
+                "{context} · ↵ password · ⌘↵ username · ⌥↵ one-time code"
+            ))
             .arg(account.username.clone())
             .copy_text(account.username.clone())
             .modifier(
@@ -267,6 +273,12 @@ fn account_item(account: Account) -> Item {
                     .subtitle(format!("Copy the username {}", account.username))
                     .arg(account.username.clone())
                     .variables(username.variables()),
+            )
+            .modifier(
+                Modifier::new(Key::Option)
+                    .subtitle(format!("Copy the one-time code of {}", account.username))
+                    .arg(account.username.clone())
+                    .variables(otp.variables()),
             ),
         &password,
     )
