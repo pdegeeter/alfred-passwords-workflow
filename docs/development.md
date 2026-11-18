@@ -101,7 +101,7 @@ without apw, a browser, iCloud or the Keychain.
 | --- | --- |
 | `tests/query_test.rs` | Domain normalisation; `pw` and `pwg` query parsing, pin commands; `pwg` options anywhere, invalid options, how options combine with the configuration. |
 | `tests/domains_test.rs` | Domain index: remember / forget / use counts, suggestion ranking (label prefix, frecency, ties, limit), atomic save, domains-only file, malformed file. |
-| `tests/apw_test.rs` | The `apw` commands run; JSON decoding; status 3 / 9 / unpaired; missing binary; timeout; password on stdin only; binary resolution. |
+| `tests/apw_test.rs` | The `apw` commands run; JSON decoding; status 3 / 9 / unpaired; missing binary; timeout; password on stdin only; binary resolution; one-time codes picked by username, never another account's among several. |
 | `tests/alfred_test.rs` | JSON shape of items: variables (style spec, history id), ⌘ / ⌥ modifiers, filters, error items, history items; no password in items. |
 | `tests/actions_test.rs` | Variables round trip; each action against the fakes; generated passwords kept, copied again from the history; nothing copied when saving or generating fails; a history failure never blocks the copy. |
 | `tests/generator_test.rs` | Apple format; custom length, enabled sets, look-alikes; impossible styles; spec round trip; summaries; configuration defaults and parsing. |

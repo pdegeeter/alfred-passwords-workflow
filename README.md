@@ -9,9 +9,9 @@ saving it.
 pw github.com
  ┌──────────────────────────────────────────────────────────────┐
  │ me@example.com                                                 │
- │   github.com · ↵ copy password · ⌘↵ copy username              │
+ │   github.com · ↵ password · ⌘↵ username · ⌥↵ one-time code     │
  │ ci-bot                                                         │
- │   github.com · CI robot · ↵ copy password · ⌘↵ copy username   │
+ │   github.com · CI robot · ↵ password · ⌘↵ username · ⌥↵ …      │
  └──────────────────────────────────────────────────────────────┘
 
 pwg 24 -s
@@ -35,7 +35,7 @@ with `SIGKILL (Launch Constraint Violation)`.
 
 So this workflow talks to [apw](https://github.com/bendews/apw), which runs a
 headless Chromium with Apple's extension behind a small daemon, and exposes it
-as a CLI. The workflow calls `apw pw list|get|save` and `apw auth`, and decodes
+as a CLI. The workflow calls `apw pw list|get|save`, `apw otp get` and `apw auth`, and decodes
 their JSON.
 
 - **Search is by domain.** The helper only answers "which accounts exist for
@@ -139,6 +139,8 @@ completes it. `pw` alone lists the most used ones. On an account:
 
 - <kbd>↵</kbd> copies the password (macOS may ask for Touch ID),
 - <kbd>⌘</kbd><kbd>↵</kbd> copies the username,
+- <kbd>⌥</kbd><kbd>↵</kbd> copies the current one-time code (TOTP) saved
+  with the account in Apple Passwords, concealed like a password,
 - <kbd>⌘</kbd><kbd>C</kbd> also copies the username.
 
 **Generate**: `pwg`

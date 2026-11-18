@@ -22,14 +22,22 @@ fn account(username: &str, title: Option<&str>) -> Account {
 }
 
 #[test]
-fn account_items_copy_the_password_and_the_username_with_command() {
+fn account_items_copy_the_password_the_username_and_the_one_time_code() {
     let items = alfred::accounts("github.com", "", vec![account("me", Some("Work"))]);
     let item = to_json(&items[0]);
 
     assert_eq!(item["title"], "me");
     assert_eq!(
         item["subtitle"],
-        "github.com · Work · ↵ copy password · ⌘↵ copy username"
+        "github.com · Work · ↵ password · ⌘↵ username · ⌥↵ one-time code"
+    );
+    assert_eq!(
+        item["mods"]["alt"]["variables"],
+        json!({"action": "copy-otp", "domain": "github.com", "username": "me"})
+    );
+    assert_eq!(
+        item["mods"]["alt"]["subtitle"],
+        "Copy the one-time code of me"
     );
     assert_eq!(item["arg"], "me");
     assert_eq!(item["text"]["copy"], "me");

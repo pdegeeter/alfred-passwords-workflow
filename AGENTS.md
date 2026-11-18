@@ -16,8 +16,9 @@ release flow), fix every reference to the old behaviour before committing.
 An Alfred (macOS) workflow written in Rust that uses Apple Passwords through
 [apw](https://github.com/bendews/apw). One binary, `alfred-passwords`:
 
-- `search [query]` — Script Filter, keyword `pw`: accounts for a domain, the
-  known domains while the query is not one yet, and the `pin` pairing items.
+- `search [query]` — Script Filter, keyword `pw`: accounts for a domain (↵
+  password, ⌘↵ username, ⌥↵ one-time code via `apw otp get`), the known
+  domains while the query is not one yet, and the `pin` pairing items.
 - `generate [query]` — Script Filter, keyword `pwg`: generate a password in
   the configured style (`PWG_*` variables) or with the options typed in the
   query (`24`, `apple`, `±l ±d ±s ±a`), optionally save it for

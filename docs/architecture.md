@@ -44,8 +44,9 @@ A single binary, `alfred-passwords`, backs the Alfred graph:
 | `run` | Run Script | Perform the picked item's action, print the notification |
 
 Both script filters connect to the same Run Script, which connects to a Post
-Notification. Extra connections carry the modifiers: ⌘ from `pw` (copy the
-username) and ⌥ from `pwg` (replace an existing password).
+Notification. Extra connections carry the modifiers: ⌘ and ⌥ from `pw` (copy
+the username, copy the one-time code) and ⌥ from `pwg` (replace an existing
+password).
 
 | Module | Responsibility |
 | --- | --- |
@@ -67,7 +68,7 @@ username) and ⌥ from `pwg` (replace an existing password).
 `apw pw list github.com` → `alfred::accounts` keeps accounts whose username or
 title contains every filter word and builds one item per account. Each item
 carries the `copy-password` action in its variables, and its ⌘ modifier the
-`copy-username` action. A query that is not a domain yet (no dot, or a
+`copy-username` action, and its ⌥ modifier the `copy-otp` action. A query that is not a domain yet (no dot, or a
 top-level domain under two letters) never calls apw, which keeps keystrokes
 cheap.
 
