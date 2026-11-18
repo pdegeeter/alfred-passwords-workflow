@@ -2,3 +2,6 @@
 /workflow/alfred-passwords
 *.alfredworkflow
 /workflow/prefs.plist
+
+# Git worktrees created by coding agents inside the repository
+/.claude/worktrees/
