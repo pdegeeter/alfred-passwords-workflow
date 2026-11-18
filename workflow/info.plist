@@ -297,7 +297,7 @@ Requires apw (https://github.com/bendews/apw): `brew install bendews/homebrew-ta
 				</array>
 			</dict>
 			<key>description</key>
-			<string>Default style of pwg. Apple: bevfzw-yuzdmg-edx4Fe. Custom: the length and characters below.</string>
+			<string>Default style of pwg. Apple (bevfzw-yuzdmg-edx4Fe) ignores the custom settings below. Custom uses them.</string>
 			<key>label</key>
 			<string>Password style</string>
 			<key>type</key>
@@ -463,9 +463,9 @@ Requires apw (https://github.com/bendews/apw): `brew install bendews/homebrew-ta
 				</array>
 			</dict>
 			<key>description</key>
-			<string>Length of a custom password. pwg 32 overrides it once.</string>
+			<string>Custom style only, ignored with Apple. Also the base of options typed in pwg, even with Apple: pwg -s keeps this length. pwg 32 overrides it once.</string>
 			<key>label</key>
-			<string>Length</string>
+			<string>Custom length</string>
 			<key>type</key>
 			<string>popupbutton</string>
 			<key>variable</key>
@@ -482,9 +482,9 @@ Requires apw (https://github.com/bendews/apw): `brew install bendews/homebrew-ta
 				<string>Letters (e.g. Aa)</string>
 			</dict>
 			<key>description</key>
-			<string>pwg -l / +l overrides it once.</string>
+			<string>Custom style only, ignored with Apple, and the base of options typed in pwg. pwg -l / +l overrides it once.</string>
 			<key>label</key>
-			<string>Characters</string>
+			<string>Custom characters</string>
 			<key>type</key>
 			<string>checkbox</string>
 			<key>variable</key>

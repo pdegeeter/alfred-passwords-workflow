@@ -109,11 +109,16 @@ In Alfred, open the workflow and click **Configure Workflow**:
 | --- | --- | --- |
 | apw binary | Homebrew's | Path to `apw` |
 | Password style | Apple | Apple (`xxxxxx-xxxxxx-xxxxxx`) or Custom |
-| Length | 20 | Custom style, 4 to 40 |
-| Letters (e.g. Aa) | on | Custom style |
-| Digits (e.g. 345) | on | Custom style |
-| Symbols (@&$!#?) | on | Custom style |
-| Look-alike characters (e.g. 1l\| O0 Z2) | off | Custom style |
+| Custom length | 20 | 4 to 40 |
+| Custom characters: letters (e.g. Aa) | on | |
+| Digits (e.g. 345) | on | |
+| Symbols (@&$!#?) | on | |
+| Look-alike characters (e.g. 1l\| O0 Z2) | off | |
+
+Alfred cannot hide settings depending on another one, so the custom settings
+stay visible with the Apple style: they are ignored then. They still matter
+for the options typed in `pwg`: `pwg -s` with the Apple style builds a custom
+password from them, without symbols.
 
 The first time `pwg` keeps a password, macOS asks to let `alfred-passwords`
 use its Keychain item: choose **Always Allow**. The binary is not signed, so
