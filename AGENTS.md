@@ -16,8 +16,8 @@ release flow), fix every reference to the old behaviour before committing.
 An Alfred (macOS) workflow written in Rust that uses Apple Passwords through
 [apw](https://github.com/bendews/apw). One binary, `alfred-passwords`:
 
-- `search [query]` — Script Filter, keyword `pw`: accounts for a domain, and
-  the `pin` pairing items.
+- `search [query]` — Script Filter, keyword `pw`: accounts for a domain, the
+  known domains while the query is not one yet, and the `pin` pairing items.
 - `generate [query]` — Script Filter, keyword `pwgen`: generate a password,
   optionally save it for `<domain> <username>`.
 - `run` — Run Script: reads the item's action from the Alfred variables
@@ -52,6 +52,10 @@ cargo fmt --all                           # format (CI checks with --check)
   `runner::CommandRunner`, the clipboard through `clipboard::Clipboard`. Tests
   use `FakeRunner` / `FakeClipboard` from `tests/common/mod.rs`. Keep new logic
   pure.
+- **The domain index stores domains only** (`domains.json` in
+  `alfred_workflow_data`, see `src/domains.rs`). Never add usernames or
+  anything secret to it. It is best-effort: a missing or malformed file is
+  empty, a save failure is only logged to stderr.
 - **Script filters never fail.** An `ApwError` becomes an item explaining the
   fix (`alfred::error`).
 - **No `uid` on items**, and `alfredfiltersresults = false`: ordering and

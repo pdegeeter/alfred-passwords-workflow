@@ -9,18 +9,43 @@ use powerpack::{Item, Key, Modifier};
 use crate::actions::Action;
 use crate::apw::{Account, ApwError};
 
-/// Item shown before any query.
-pub fn empty_search() -> Vec<Item> {
-    vec![Item::new("Search Apple Passwords")
-        .subtitle("Type a domain, e.g. github.com · `pw pin` pairs apw")
-        .valid(false)]
+/// Items shown before any query: the most used domains, then how to search.
+pub fn empty_search(suggestions: Vec<String>) -> Vec<Item> {
+    let mut items = domain_suggestions(suggestions);
+
+    items.push(
+        Item::new("Search Apple Passwords")
+            .subtitle("Type a domain, e.g. github.com · `pw pin` pairs apw")
+            .valid(false),
+    );
+
+    items
 }
 
-/// Item shown while the query is not a domain yet.
-pub fn incomplete_search(input: &str) -> Vec<Item> {
+/// Items shown while the query is not a domain yet: the known domains that
+/// match, or a hint when none does.
+pub fn incomplete_search(input: &str, suggestions: Vec<String>) -> Vec<Item> {
+    if !suggestions.is_empty() {
+        return domain_suggestions(suggestions);
+    }
+
     vec![Item::new(format!("Keep typing a domain: {input}…"))
         .subtitle("Apple Passwords is searched by domain, e.g. github.com")
         .valid(false)]
+}
+
+/// One item per known domain. ↵ or ⇥ completes the query to the domain, which
+/// then lists its accounts.
+pub fn domain_suggestions(domains: Vec<String>) -> Vec<Item> {
+    domains
+        .into_iter()
+        .map(|domain| {
+            Item::new(domain.clone())
+                .subtitle("↵ or ⇥ to list its accounts")
+                .autocomplete(format!("{domain} "))
+                .valid(false)
+        })
+        .collect()
 }
 
 /// Items for the accounts saved on `domain` whose username or title contains

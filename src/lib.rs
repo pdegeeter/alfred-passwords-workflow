@@ -9,6 +9,7 @@ pub mod actions;
 pub mod alfred;
 pub mod apw;
 pub mod clipboard;
+pub mod domains;
 pub mod generator;
 pub mod query;
 pub mod runner;
