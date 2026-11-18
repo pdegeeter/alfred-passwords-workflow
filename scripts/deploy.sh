@@ -30,5 +30,5 @@ if [[ "$MODE" == "import" ]]; then
 else
   echo "==> Symlinking workflow into Alfred"
   powerpack link
-  echo "==> Linked. Open Alfred and type 'pw' or 'pwgen' to test."
+  echo "==> Linked. Open Alfred and type 'pw' or 'pwg' to test."
 fi

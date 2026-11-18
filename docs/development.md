@@ -73,8 +73,15 @@ cat /tmp/alfred-passwords-data/domains.json
 # Generate items, with the "already exists" check
 ./target/debug/alfred-passwords generate "github.com me@example.com" | python3 -m json.tool
 
-# Run an action as Alfred would: generate and copy (concealed) a password
-action=generate ./target/debug/alfred-passwords run
+# Options and configuration (the PWG_* variables of Configure Workflow)
+./target/debug/alfred-passwords generate "24 -s +a" | python3 -m json.tool
+PWG_STYLE=custom PWG_LENGTH=12 ./target/debug/alfred-passwords generate "" | python3 -m json.tool
+
+# Run an action as Alfred would: generate and copy (concealed) a password.
+# Without alfred_workflow_data, the history is off and the Keychain untouched;
+# with it, the first run creates the history key in your login Keychain.
+unset alfred_workflow_data
+action=generate style=custom:32:lds ./target/debug/alfred-passwords run
 
 # Copy a password
 action=copy-password domain=github.com username=me@example.com ./target/debug/alfred-passwords run
@@ -82,24 +89,29 @@ action=copy-password domain=github.com username=me@example.com ./target/debug/al
 
 ## Testing strategy
 
-All logic is pure and unit-tested; the side effects sit behind two traits,
+All logic is pure and unit-tested; the side effects sit behind traits,
 replaced in tests by doubles from `tests/common/mod.rs`: `FakeRunner` (canned
-`apw` output keyed by arguments, records every call and its stdin) and
-`FakeClipboard` (records what was copied and whether it was concealed). The
-suite runs offline, without apw, a browser or iCloud.
+`apw` output keyed by arguments, records every call and its stdin),
+`FakeClipboard` (records what was copied and whether it was concealed),
+`FakeKeyStore` (a fixed key, or a denied Keychain) and `FakeVault` (an
+in-memory history that can fail to load or save). The suite runs offline,
+without apw, a browser, iCloud or the Keychain.
 
 | Test file | Covers |
 | --- | --- |
-| `tests/query_test.rs` | Domain normalisation; `pw` and `pwgen` query parsing, pin commands. |
+| `tests/query_test.rs` | Domain normalisation; `pw` and `pwg` query parsing, pin commands; `pwg` options anywhere, invalid options, how options combine with the configuration. |
 | `tests/domains_test.rs` | Domain index: remember / forget / use counts, suggestion ranking (label prefix, frecency, ties, limit), atomic save, domains-only file, malformed file. |
 | `tests/apw_test.rs` | The `apw` commands run; JSON decoding; status 3 / 9 / unpaired; missing binary; timeout; password on stdin only; binary resolution. |
-| `tests/alfred_test.rs` | JSON shape of items: variables, ⌘ / ⌥ modifiers, filters, error items; no password in items. |
-| `tests/actions_test.rs` | Variables round trip; each action against the fakes; nothing copied when saving or generating fails. |
-| `tests/generator_test.rs` | Apple format, one uppercase and one digit that never collide, no ambiguous characters, OS randomness. |
+| `tests/alfred_test.rs` | JSON shape of items: variables (style spec, history id), ⌘ / ⌥ modifiers, filters, error items, history items; no password in items. |
+| `tests/actions_test.rs` | Variables round trip; each action against the fakes; generated passwords kept, copied again from the history; nothing copied when saving or generating fails; a history failure never blocks the copy. |
+| `tests/generator_test.rs` | Apple format; custom length, enabled sets, look-alikes; impossible styles; spec round trip; summaries; configuration defaults and parsing. |
+| `tests/history_test.rs` | 20-entry cap, newest first, lookup by id, masked preview, age. |
+| `tests/vault_test.rs` | `EncryptedFile` with a fake key: round trip, no clear text, mode 0600, fresh nonce, missing file without Keychain access, wrong key / tampered / foreign file unreadable, denied Keychain. |
 | `tests/runner_test.rs` | `SystemRunner` against shell scripts: stdout, stdin, failures, missing program, timeout kill. |
 
-`SystemClipboard` is not unit-tested (it writes the real pasteboard); check it
-with the `run` smoke test above.
+`SystemClipboard` and `KeychainKeyStore` are not unit-tested (they touch the
+real pasteboard and Keychain); check them with the `run` smoke test above and
+from Alfred.
 
 ## Project layout
 
@@ -124,11 +136,19 @@ with the `run` smoke test above.
 
 ## Editing the Alfred graph
 
-`workflow/info.plist` defines two Script Filters (`pw`, `pwgen`), one Run
-Script and one notification. If you edit the workflow in Alfred's UI while it
+`workflow/info.plist` defines two Script Filters (`pw`, `pwg`), one Run
+Script and one notification, plus the Configure Workflow settings (`APW_BIN`,
+`PWG_STYLE`, `PWG_LENGTH`, `PWG_LETTERS`, `PWG_DIGITS`, `PWG_SYMBOLS`,
+`PWG_SIMILAR`). If you edit the workflow in Alfred's UI while it
 is symlinked (`./scripts/deploy.sh`), copy the updated `info.plist` back into
 `workflow/` before committing. Validate it with:
 
 ```sh
 plutil -lint workflow/info.plist
 ```
+
+To rename a keyword, give its object a new `uid` too (in `objects`,
+`connections` and `uidata`). When a workflow is updated, Alfred keeps the
+keyword of an object it already knows by `uid`, so a renamed keyword on the
+same `uid` never reaches existing installs: renaming `pwgen` to `pwg` kept
+`pwgen` until the Script Filter moved from `A2…` to `A5…`.
