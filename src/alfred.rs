@@ -8,6 +8,8 @@ use powerpack::{Item, Key, Modifier};
 
 use crate::actions::Action;
 use crate::apw::{Account, ApwError};
+use crate::generator::Style;
+use crate::history::{Entry, History};
 
 /// Items shown before any query: the most used domains, then how to search.
 pub fn empty_search(suggestions: Vec<String>) -> Vec<Item> {
@@ -74,7 +76,7 @@ pub fn accounts(domain: &str, filter: &str, accounts: Vec<Account>) -> Vec<Item>
 
     vec![Item::new(format!("No account found for {domain}"))
         .subtitle(format!(
-            "Create one with `pwgen {domain} <username>`, or check the domain"
+            "Create one with `pwg {domain} <username>`, or check the domain"
         ))
         .valid(false)]
 }
@@ -120,43 +122,56 @@ pub fn error(err: &ApwError) -> Item {
     }
 }
 
-/// Item that generates a password and copies it. `save_hint` names the domain
-/// the user could save it for once a username is typed.
-pub fn generate(save_hint: Option<&str>) -> Item {
-    let subtitle = match save_hint {
-        Some(domain) => format!(
-            "Copied, kept out of clipboard history · add a username to save it for {domain}"
-        ),
-        None => "Copied, kept out of clipboard history · `pwgen <domain> <username>` also saves it"
-            .to_owned(),
+/// Item that generates a password of `style` and copies it. `save_hint`
+/// names the domain the user could save it for once a username is typed.
+pub fn generate(style: &Style, save_hint: Option<&str>) -> Item {
+    if let Some(problem) = style.problem() {
+        return Item::new("Cannot generate this password")
+            .subtitle(problem)
+            .valid(false);
+    }
+
+    let hint = match save_hint {
+        Some(domain) => format!("add a username to save it for {domain}"),
+        None => "copied, kept out of clipboard history".to_owned(),
     };
 
     action_item(
         Item::new("Generate a strong password")
-            .subtitle(subtitle)
+            .subtitle(format!("{} · {hint}", style.summary()))
             .arg("generate"),
-        &Action::Generate,
+        &Action::Generate { style: *style },
     )
 }
 
-/// Items to generate a password and save it for `username` on `domain`.
+/// Items to generate a password of `style` and save it for `username` on
+/// `domain`.
 ///
 /// `exists` says whether that account is already saved: replacing its
 /// password then needs ⌥↵, so a plain ↵ never overwrites one by accident.
 pub fn generate_and_save(
     domain: &str,
     username: &str,
+    style: &Style,
     exists: Result<bool, ApwError>,
 ) -> Vec<Item> {
+    if style.problem().is_some() {
+        return vec![generate(style, None)];
+    }
+
     let action = Action::GenerateAndSave {
         domain: domain.to_owned(),
         username: username.to_owned(),
+        style: *style,
     };
 
     let save = match exists {
         Ok(false) => action_item(
             Item::new(format!("Generate and save for {username}"))
-                .subtitle(format!("New account on {domain} · the password is copied"))
+                .subtitle(format!(
+                    "New account on {domain} · {} · the password is copied",
+                    style.summary()
+                ))
                 .arg(username),
             &action,
         ),
@@ -178,7 +193,54 @@ pub fn generate_and_save(
         Err(err) => error(&err),
     };
 
-    vec![save, generate(None)]
+    vec![save, generate(style, None)]
+}
+
+/// Items for options typed in `pwg` that are invalid.
+pub fn option_problems(problems: &[String]) -> Vec<Item> {
+    problems
+        .iter()
+        .map(|problem| {
+            Item::new(problem.clone())
+                .subtitle("Options: a length (4–40), apple, ±l letters, ±d digits, ±s symbols, ±a look-alikes")
+                .valid(false)
+        })
+        .collect()
+}
+
+/// One item per generated password, newest first: a masked preview, never
+/// the password itself. ↵ copies it again.
+pub fn history(entries: &[Entry], now: u64) -> Vec<Item> {
+    entries
+        .iter()
+        .map(|entry| {
+            let mut subtitle = format!(
+                "Generated {} · {}",
+                History::age(entry.created_at, now),
+                entry.style
+            );
+
+            if let Some(saved_for) = &entry.saved_for {
+                subtitle.push_str(&format!(" · saved for {saved_for}"));
+            }
+
+            action_item(
+                Item::new(History::preview(&entry.password))
+                    .subtitle(format!("{subtitle} · ↵ copy again"))
+                    .arg(entry.id.clone()),
+                &Action::CopyGenerated {
+                    id: entry.id.clone(),
+                },
+            )
+        })
+        .collect()
+}
+
+/// Item shown when the history cannot be read (Keychain access denied, …).
+pub fn history_error(err: &anyhow::Error) -> Item {
+    Item::new("Password history unavailable")
+        .subtitle(format!("{err:#}"))
+        .valid(false)
 }
 
 fn account_item(account: Account) -> Item {

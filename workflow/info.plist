@@ -29,7 +29,7 @@
 				<false/>
 			</dict>
 		</array>
-		<key>A2000000-0000-0000-0000-0000000000A2</key>
+		<key>A5000000-0000-0000-0000-0000000000A5</key>
 		<array>
 			<dict>
 				<key>destinationuid</key>
@@ -141,7 +141,7 @@
 				<key>escaping</key>
 				<integer>102</integer>
 				<key>keyword</key>
-				<string>pwgen</string>
+				<string>pwg</string>
 				<key>queuedelaycustom</key>
 				<integer>3</integer>
 				<key>queuedelayimmediatelyinitially</key>
@@ -159,7 +159,7 @@
 				<key>scriptfile</key>
 				<string></string>
 				<key>subtext</key>
-				<string>Generate a strong password, optionally save it for a domain and username</string>
+				<string>Generate a strong password, optionally save it; list the last 20 generated</string>
 				<key>title</key>
 				<string>Generate a strong password</string>
 				<key>type</key>
@@ -170,7 +170,7 @@
 			<key>type</key>
 			<string>alfred.workflow.input.scriptfilter</string>
 			<key>uid</key>
-			<string>A2000000-0000-0000-0000-0000000000A2</string>
+			<string>A5000000-0000-0000-0000-0000000000A5</string>
 			<key>version</key>
 			<integer>3</integer>
 		</dict>
@@ -220,9 +220,9 @@
 		</dict>
 	</array>
 	<key>readme</key>
-	<string>Type `pw` followed by a domain (github.com) to list its accounts: ↵ copies the password, ⌘↵ the username. Type `pwgen` to generate a strong password, or `pwgen &lt;domain&gt; &lt;username&gt;` to also save it.
+	<string>Type `pw` followed by a domain (github.com) to list its accounts: ↵ copies the password, ⌘↵ the username. Type `pwg` to generate a strong password, or `pwg &lt;domain&gt; &lt;username&gt;` to also save it; `pwg` also lists the last 20 generated passwords. Options change one generation: a length (4-40), `apple`, `+l`/`-l` letters, `+d`/`-d` digits, `+s`/`-s` symbols, `+a`/`-a` look-alikes (`pwg 24 -s`). Defaults are in Configure Workflow.
 
-Passwords are copied straight to the clipboard, marked concealed so clipboard histories skip them; they never go through Alfred.
+Passwords are copied straight to the clipboard, marked concealed so clipboard histories skip them; they never go through Alfred. Generated passwords are kept in an encrypted file whose key is in your login Keychain.
 
 Requires apw (https://github.com/bendews/apw): `brew install bendews/homebrew-tap/apw`, `brew services start apw`, then `pw pin` to pair it after each restart.</string>
 	<key>uidata</key>
@@ -234,7 +234,7 @@ Requires apw (https://github.com/bendews/apw): `brew install bendews/homebrew-ta
 			<key>ypos</key>
 			<real>40</real>
 		</dict>
-		<key>A2000000-0000-0000-0000-0000000000A2</key>
+		<key>A5000000-0000-0000-0000-0000000000A5</key>
 		<dict>
 			<key>xpos</key>
 			<real>60</real>
@@ -278,6 +278,274 @@ Requires apw (https://github.com/bendews/apw): `brew install bendews/homebrew-ta
 			<string>textfield</string>
 			<key>variable</key>
 			<string>APW_BIN</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>apple</string>
+				<key>pairs</key>
+				<array>
+					<array>
+						<string>Apple (xxxxxx-xxxxxx-xxxxxx)</string>
+						<string>apple</string>
+					</array>
+					<array>
+						<string>Custom</string>
+						<string>custom</string>
+					</array>
+				</array>
+			</dict>
+			<key>description</key>
+			<string>Default style of pwg. Apple: bevfzw-yuzdmg-edx4Fe. Custom: the length and characters below.</string>
+			<key>label</key>
+			<string>Password style</string>
+			<key>type</key>
+			<string>popupbutton</string>
+			<key>variable</key>
+			<string>PWG_STYLE</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<string>20</string>
+				<key>pairs</key>
+				<array>
+					<array>
+						<string>4</string>
+						<string>4</string>
+					</array>
+					<array>
+						<string>5</string>
+						<string>5</string>
+					</array>
+					<array>
+						<string>6</string>
+						<string>6</string>
+					</array>
+					<array>
+						<string>7</string>
+						<string>7</string>
+					</array>
+					<array>
+						<string>8</string>
+						<string>8</string>
+					</array>
+					<array>
+						<string>9</string>
+						<string>9</string>
+					</array>
+					<array>
+						<string>10</string>
+						<string>10</string>
+					</array>
+					<array>
+						<string>11</string>
+						<string>11</string>
+					</array>
+					<array>
+						<string>12</string>
+						<string>12</string>
+					</array>
+					<array>
+						<string>13</string>
+						<string>13</string>
+					</array>
+					<array>
+						<string>14</string>
+						<string>14</string>
+					</array>
+					<array>
+						<string>15</string>
+						<string>15</string>
+					</array>
+					<array>
+						<string>16</string>
+						<string>16</string>
+					</array>
+					<array>
+						<string>17</string>
+						<string>17</string>
+					</array>
+					<array>
+						<string>18</string>
+						<string>18</string>
+					</array>
+					<array>
+						<string>19</string>
+						<string>19</string>
+					</array>
+					<array>
+						<string>20</string>
+						<string>20</string>
+					</array>
+					<array>
+						<string>21</string>
+						<string>21</string>
+					</array>
+					<array>
+						<string>22</string>
+						<string>22</string>
+					</array>
+					<array>
+						<string>23</string>
+						<string>23</string>
+					</array>
+					<array>
+						<string>24</string>
+						<string>24</string>
+					</array>
+					<array>
+						<string>25</string>
+						<string>25</string>
+					</array>
+					<array>
+						<string>26</string>
+						<string>26</string>
+					</array>
+					<array>
+						<string>27</string>
+						<string>27</string>
+					</array>
+					<array>
+						<string>28</string>
+						<string>28</string>
+					</array>
+					<array>
+						<string>29</string>
+						<string>29</string>
+					</array>
+					<array>
+						<string>30</string>
+						<string>30</string>
+					</array>
+					<array>
+						<string>31</string>
+						<string>31</string>
+					</array>
+					<array>
+						<string>32</string>
+						<string>32</string>
+					</array>
+					<array>
+						<string>33</string>
+						<string>33</string>
+					</array>
+					<array>
+						<string>34</string>
+						<string>34</string>
+					</array>
+					<array>
+						<string>35</string>
+						<string>35</string>
+					</array>
+					<array>
+						<string>36</string>
+						<string>36</string>
+					</array>
+					<array>
+						<string>37</string>
+						<string>37</string>
+					</array>
+					<array>
+						<string>38</string>
+						<string>38</string>
+					</array>
+					<array>
+						<string>39</string>
+						<string>39</string>
+					</array>
+					<array>
+						<string>40</string>
+						<string>40</string>
+					</array>
+				</array>
+			</dict>
+			<key>description</key>
+			<string>Length of a custom password. pwg 32 overrides it once.</string>
+			<key>label</key>
+			<string>Length</string>
+			<key>type</key>
+			<string>popupbutton</string>
+			<key>variable</key>
+			<string>PWG_LENGTH</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<true/>
+				<key>required</key>
+				<false/>
+				<key>text</key>
+				<string>Letters (e.g. Aa)</string>
+			</dict>
+			<key>description</key>
+			<string>pwg -l / +l overrides it once.</string>
+			<key>label</key>
+			<string>Characters</string>
+			<key>type</key>
+			<string>checkbox</string>
+			<key>variable</key>
+			<string>PWG_LETTERS</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<true/>
+				<key>required</key>
+				<false/>
+				<key>text</key>
+				<string>Digits (e.g. 345)</string>
+			</dict>
+			<key>description</key>
+			<string>pwg -d / +d overrides it once.</string>
+			<key>label</key>
+			<string></string>
+			<key>type</key>
+			<string>checkbox</string>
+			<key>variable</key>
+			<string>PWG_DIGITS</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<true/>
+				<key>required</key>
+				<false/>
+				<key>text</key>
+				<string>Symbols (@&amp;$!#?)</string>
+			</dict>
+			<key>description</key>
+			<string>pwg -s / +s overrides it once.</string>
+			<key>label</key>
+			<string></string>
+			<key>type</key>
+			<string>checkbox</string>
+			<key>variable</key>
+			<string>PWG_SYMBOLS</string>
+		</dict>
+		<dict>
+			<key>config</key>
+			<dict>
+				<key>default</key>
+				<false/>
+				<key>required</key>
+				<false/>
+				<key>text</key>
+				<string>Look-alike characters (e.g. 1l| O0 Z2)</string>
+			</dict>
+			<key>description</key>
+			<string>pwg +a / -a overrides it once.</string>
+			<key>label</key>
+			<string></string>
+			<key>type</key>
+			<string>checkbox</string>
+			<key>variable</key>
+			<string>PWG_SIMILAR</string>
 		</dict>
 	</array>
 	<key>variablesdontexport</key>

@@ -5,6 +5,8 @@
 
 use alfred_passwords::alfred;
 use alfred_passwords::apw::{Account, ApwError};
+use alfred_passwords::generator::{Rules, Style};
+use alfred_passwords::history::Entry;
 use serde_json::{json, Value};
 
 fn to_json(item: &powerpack::Item) -> Value {
@@ -108,37 +110,83 @@ fn pin_items_encode_the_pairing_actions() {
     );
 }
 
-#[test]
-fn generate_item_hints_at_saving() {
-    let plain = to_json(&alfred::generate(None));
-    assert_eq!(plain["variables"], json!({"action": "generate"}));
+fn custom(length: usize) -> Style {
+    Style::Custom(Rules {
+        length,
+        letters: true,
+        digits: true,
+        symbols: false,
+        similar: false,
+    })
+}
 
-    let with_domain = to_json(&alfred::generate(Some("github.com")));
-    assert!(with_domain["subtitle"]
-        .as_str()
-        .unwrap()
-        .ends_with("add a username to save it for github.com"));
+#[test]
+fn generate_item_carries_the_style_and_hints_at_saving() {
+    let plain = to_json(&alfred::generate(&Style::Apple, None));
+    assert_eq!(
+        plain["variables"],
+        json!({"action": "generate", "style": "apple"})
+    );
+    assert_eq!(
+        plain["subtitle"],
+        "Apple format · copied, kept out of clipboard history"
+    );
+
+    let with_domain = to_json(&alfred::generate(&custom(24), Some("github.com")));
+    assert_eq!(
+        with_domain["variables"],
+        json!({"action": "generate", "style": "custom:24:ld"})
+    );
+    assert_eq!(
+        with_domain["subtitle"],
+        "24 characters · Aa 345 · no look-alikes · add a username to save it for github.com"
+    );
+}
+
+#[test]
+fn an_impossible_style_is_explained_not_generated() {
+    let none = Style::Custom(Rules {
+        length: 20,
+        letters: false,
+        digits: false,
+        symbols: false,
+        similar: false,
+    });
+
+    let item = to_json(&alfred::generate(&none, None));
+    assert_eq!(item["title"], "Cannot generate this password");
+    assert_eq!(item["subtitle"], "Enable letters, digits or symbols");
+    assert_eq!(item["valid"], false);
+
+    let items = alfred::generate_and_save("github.com", "me", &none, Ok(false));
+    assert_eq!(items.len(), 1);
+    assert_eq!(to_json(&items[0])["valid"], false);
 }
 
 #[test]
 fn saving_a_new_account_is_the_default_action() {
-    let items = alfred::generate_and_save("github.com", "me", Ok(false));
+    let items = alfred::generate_and_save("github.com", "me", &custom(24), Ok(false));
     let save = to_json(&items[0]);
 
     assert_eq!(save["title"], "Generate and save for me");
     assert_eq!(
         save["variables"],
-        json!({"action": "generate-and-save", "domain": "github.com", "username": "me"})
+        json!({
+            "action": "generate-and-save",
+            "domain": "github.com",
+            "username": "me",
+            "style": "custom:24:ld"
+        })
     );
     assert_eq!(
         to_json(&items[1])["variables"],
-        json!({"action": "generate"})
+        json!({"action": "generate", "style": "custom:24:ld"})
     );
 }
 
 #[test]
 fn replacing_an_existing_password_needs_option() {
-    let items = alfred::generate_and_save("github.com", "me", Ok(true));
+    let items = alfred::generate_and_save("github.com", "me", &Style::Apple, Ok(true));
     let save = to_json(&items[0]);
 
     assert_eq!(save["title"], "Replace the password of me");
@@ -147,19 +195,84 @@ fn replacing_an_existing_password_needs_option() {
     assert_eq!(save["mods"]["alt"]["valid"], true);
     assert_eq!(
         save["mods"]["alt"]["variables"],
-        json!({"action": "generate-and-save", "domain": "github.com", "username": "me"})
+        json!({
+            "action": "generate-and-save",
+            "domain": "github.com",
+            "username": "me",
+            "style": "apple"
+        })
     );
 }
 
 #[test]
 fn saving_when_apw_fails_shows_the_error_and_still_offers_generation() {
-    let items = alfred::generate_and_save("github.com", "me", Err(ApwError::NotRunning));
+    let items =
+        alfred::generate_and_save("github.com", "me", &Style::Apple, Err(ApwError::NotRunning));
 
     assert_eq!(to_json(&items[0])["title"], "The apw daemon is not running");
     assert_eq!(
         to_json(&items[1])["variables"],
-        json!({"action": "generate"})
+        json!({"action": "generate", "style": "apple"})
     );
+}
+
+#[test]
+fn option_problems_are_not_actionable() {
+    let items = alfred::option_problems(&["Length 3 is out of range: 4–40".to_owned()]);
+    let item = to_json(&items[0]);
+
+    assert_eq!(item["title"], "Length 3 is out of range: 4–40");
+    assert_eq!(item["valid"], false);
+}
+
+#[test]
+fn history_items_show_a_masked_preview_never_the_password() {
+    let now = 1_800_000_000;
+    let entries = vec![
+        Entry {
+            id: "a1b2".to_owned(),
+            password: "bevfzw-yuzdmg-edx4Fe".to_owned(),
+            created_at: now - 300,
+            style: "Apple format".to_owned(),
+            saved_for: Some("me (github.com)".to_owned()),
+        },
+        Entry {
+            id: "c3d4".to_owned(),
+            password: "Xy7@kq9!Lm".to_owned(),
+            created_at: now - 3 * 86_400,
+            style: "10 characters · Aa 345 @&$ · no look-alikes".to_owned(),
+            saved_for: None,
+        },
+    ];
+
+    let items = alfred::history(&entries, now);
+    let first = to_json(&items[0]);
+    let second = to_json(&items[1]);
+
+    assert_eq!(first["title"], "bevf****");
+    assert_eq!(
+        first["subtitle"],
+        "Generated 5 min ago · Apple format · saved for me (github.com) · ↵ copy again"
+    );
+    assert_eq!(
+        first["variables"],
+        json!({"action": "copy-generated", "id": "a1b2"})
+    );
+    assert_eq!(second["title"], "Xy7@****");
+    assert!(!first.to_string().contains("bevfzw-yuzdmg-edx4Fe"));
+    assert!(!second.to_string().contains("Xy7@kq9!Lm"));
+    assert!(first.get("uid").is_none());
+}
+
+#[test]
+fn an_unavailable_history_is_explained() {
+    let item = to_json(&alfred::history_error(&anyhow::anyhow!(
+        "the user denied Keychain access"
+    )));
+
+    assert_eq!(item["title"], "Password history unavailable");
+    assert_eq!(item["subtitle"], "the user denied Keychain access");
+    assert_eq!(item["valid"], false);
 }
 
 #[test]

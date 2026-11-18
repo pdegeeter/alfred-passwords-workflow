@@ -14,12 +14,14 @@ pw github.com
  │   github.com · CI robot · ↵ copy password · ⌘↵ copy username   │
  └──────────────────────────────────────────────────────────────┘
 
-pwgen github.com me@example.com
+pwg 24 -s
  ┌──────────────────────────────────────────────────────────────┐
- │ Generate and save for me@example.com                           │
- │   New account on github.com · the password is copied           │
  │ Generate a strong password                                     │
- │   Copied, kept out of clipboard history · …                    │
+ │   24 characters · Aa 345 · no look-alikes · copied, …          │
+ │ bevf****                                                       │
+ │   Generated 5 min ago · Apple format · saved for me (github…)  │
+ │ Xy7@****                                                       │
+ │   Generated yesterday · 16 characters · Aa 345 @&$ · …         │
  └──────────────────────────────────────────────────────────────┘
 ```
 
@@ -49,11 +51,21 @@ their JSON.
   `org.nspasteboard.ConcealedType` so clipboard histories (Alfred's included)
   skip it. Alfred only receives the notification text.
 - **Saving never overwrites by accident.** When the account already exists,
-  `pwgen` shows "Replace the password of …" and only <kbd>⌥</kbd><kbd>↵</kbd>
+  `pwg` shows "Replace the password of …" and only <kbd>⌥</kbd><kbd>↵</kbd>
   replaces it.
-- **Generated passwords** follow the format Apple Passwords suggests: three
-  groups of six characters (`abcdef-ghjkmN-pqrst2`), one uppercase letter, one
-  digit, no ambiguous characters, from the system's secure random source.
+- **Generated passwords** come from the system's secure random source, in
+  one of two styles:
+  - **Apple**, the format Apple Passwords suggests: three groups of six
+    characters (`bevfzw-yuzdmg-edx4Fe`), one uppercase letter, one digit, no
+    ambiguous characters;
+  - **Custom**: 4 to 40 characters, with letters (`Aa`), digits (`345`),
+    symbols (`@&$!#?`) and look-alike characters (`1l| O0 Z2`) each on or
+    off. Every enabled set appears at least once.
+- **The last 20 generated passwords** are kept so `pwg` can copy one again.
+  They are stored encrypted (ChaCha20-Poly1305) in `history.bin` in the
+  workflow's data folder, with a random key kept in your login Keychain, so a
+  copy of the file (backup, sync) is useless on its own. Alfred only ever shows
+  the first four characters (`bevf****`).
 
 ## Requirements
 
@@ -89,6 +101,24 @@ cargo install powerpack-cli   # one-time
 If apw is not installed by Homebrew, set its path in the workflow's
 configuration (**apw binary**).
 
+## Configuration
+
+In Alfred, open the workflow and click **Configure Workflow**:
+
+| Setting | Default | |
+| --- | --- | --- |
+| apw binary | Homebrew's | Path to `apw` |
+| Password style | Apple | Apple (`xxxxxx-xxxxxx-xxxxxx`) or Custom |
+| Length | 20 | Custom style, 4 to 40 |
+| Letters (e.g. Aa) | on | Custom style |
+| Digits (e.g. 345) | on | Custom style |
+| Symbols (@&$!#?) | on | Custom style |
+| Look-alike characters (e.g. 1l\| O0 Z2) | off | Custom style |
+
+The first time `pwg` keeps a password, macOS asks to let `alfred-passwords`
+use its Keychain item: choose **Always Allow**. The binary is not signed, so
+macOS asks again after each update of the workflow.
+
 ## Usage
 
 **Pair apw** once per daemon start (after each login or reboot):
@@ -106,12 +136,28 @@ completes it. `pw` alone lists the most used ones. On an account:
 - <kbd>⌘</kbd><kbd>↵</kbd> copies the username,
 - <kbd>⌘</kbd><kbd>C</kbd> also copies the username.
 
-**Generate**: `pwgen`
+**Generate**: `pwg`
 
-- `pwgen` and <kbd>↵</kbd>: copy a new strong password.
-- `pwgen <domain> <username>` and <kbd>↵</kbd>: create the account in Apple
+- `pwg` and <kbd>↵</kbd>: copy a new strong password in the configured
+  style. Below, the last 20 generated passwords (`bevf****`, when, which
+  style, which account): <kbd>↵</kbd> copies one again.
+- `pwg <domain> <username>` and <kbd>↵</kbd>: create the account in Apple
   Passwords with a new password, and copy it. For an existing account, use
   <kbd>⌥</kbd><kbd>↵</kbd> to replace its password.
+- Options change one generation, anywhere in the query:
+
+  | Option | Effect |
+  | --- | --- |
+  | `4` … `40` | Custom password of that length |
+  | `apple` | Apple format |
+  | `+l` / `-l` | With / without letters |
+  | `+d` / `-d` | With / without digits |
+  | `+s` / `-s` | With / without symbols |
+  | `+a` / `-a` | With / without look-alike characters |
+
+  A length or a `±` option switches to a custom password built on the
+  configured rules, even when the default style is Apple. Examples:
+  `pwg 32`, `pwg 16 -s`, `pwg apple`, `pwg 24 +a github.com me`.
 
 ## Documentation
 

@@ -1,17 +1,100 @@
-//! Shared test helpers: deterministic, offline doubles for the two impure
-//! boundaries, [`CommandRunner`] and [`Clipboard`].
+//! Shared test helpers: deterministic, offline doubles for the impure
+//! boundaries: [`CommandRunner`], [`Clipboard`], [`KeyStore`] (the Keychain)
+//! and [`HistoryVault`].
 //!
 //! Included by multiple test crates; each uses a different subset, so unused
 //! helpers are expected per-crate.
 #![allow(dead_code)]
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::time::Duration;
 
 use alfred_passwords::clipboard::Clipboard;
+use alfred_passwords::history::History;
 use alfred_passwords::runner::{CommandOutput, CommandRunner, NotFound, TimedOut};
+use alfred_passwords::vault::{HistoryVault, KeyStore, Unreadable};
 use anyhow::{anyhow, bail, Result};
+
+/// A [`KeyStore`] returning a fixed key, or failing like a denied Keychain
+/// prompt; counts how often the key was asked for.
+pub struct FakeKeyStore {
+    key: Option<[u8; 32]>,
+    pub reads: Cell<usize>,
+}
+
+impl FakeKeyStore {
+    pub fn new(byte: u8) -> Self {
+        Self {
+            key: Some([byte; 32]),
+            reads: Cell::new(0),
+        }
+    }
+
+    pub fn denied() -> Self {
+        Self {
+            key: None,
+            reads: Cell::new(0),
+        }
+    }
+}
+
+impl KeyStore for FakeKeyStore {
+    fn key(&self) -> Result<[u8; 32]> {
+        self.reads.set(self.reads.get() + 1);
+
+        self.key
+            .ok_or_else(|| anyhow!("the user denied Keychain access"))
+    }
+}
+
+/// How [`FakeVault::load`] behaves.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LoadMode {
+    Ok,
+    Unreadable,
+    Fails,
+}
+
+/// An in-memory [`HistoryVault`].
+pub struct FakeVault {
+    pub history: RefCell<History>,
+    pub load_mode: LoadMode,
+    pub save_fails: bool,
+    pub saves: Cell<usize>,
+}
+
+impl FakeVault {
+    pub fn new(history: History) -> Self {
+        Self {
+            history: RefCell::new(history),
+            load_mode: LoadMode::Ok,
+            save_fails: false,
+            saves: Cell::new(0),
+        }
+    }
+}
+
+impl HistoryVault for FakeVault {
+    fn load(&self) -> Result<History> {
+        match self.load_mode {
+            LoadMode::Ok => Ok(self.history.borrow().clone()),
+            LoadMode::Unreadable => Err(anyhow!(Unreadable)),
+            LoadMode::Fails => bail!("the user denied Keychain access"),
+        }
+    }
+
+    fn save(&self, history: &History) -> Result<()> {
+        if self.save_fails {
+            bail!("disk full");
+        }
+
+        self.saves.set(self.saves.get() + 1);
+        *self.history.borrow_mut() = history.clone();
+
+        Ok(())
+    }
+}
 
 /// A single recorded invocation of [`FakeRunner`].
 #[derive(Debug, Clone, PartialEq, Eq)]
