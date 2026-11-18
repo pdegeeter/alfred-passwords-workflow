@@ -1,6 +1,6 @@
 [package]
 name = "alfred-passwords"
-version = "0.0.0"
+version = "0.1.0"
 edition = "2021"
 description = "Alfred workflow to search, copy and generate Apple Passwords entries through apw"
 license = "MIT"
