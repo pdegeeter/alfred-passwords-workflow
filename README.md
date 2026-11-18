@@ -39,6 +39,11 @@ their JSON.
 - **Search is by domain.** The helper only answers "which accounts exist for
   this URL", so you type a domain (`github.com`), not a free-text name. Extra
   words filter the usernames and titles: `pw github.com work`.
+- **Known domains autocomplete.** Since there is no way to list every
+  account, the workflow remembers the domains that returned accounts and
+  suggests them while you type (`pw git` → `github.com`), most used first.
+  Only domain names are stored (`domains.json` in the workflow's data folder),
+  never usernames or passwords. A domain shows up after its first full lookup.
 - **Secrets never go through Alfred.** The password is fetched (or generated)
   by the workflow binary and written to the clipboard directly, tagged
   `org.nspasteboard.ConcealedType` so clipboard histories (Alfred's included)
@@ -93,7 +98,9 @@ configuration (**apw binary**).
 
 When apw is not paired, any search offers the first step.
 
-**Search**: `pw <domain> [filter]`, then
+**Search**: `pw <domain> [filter]`. While the query is not a full domain
+yet, `pw` lists the known domains that match: <kbd>↵</kbd> or <kbd>⇥</kbd>
+completes it. `pw` alone lists the most used ones. On an account:
 
 - <kbd>↵</kbd> copies the password (macOS may ask for Touch ID),
 - <kbd>⌘</kbd><kbd>↵</kbd> copies the username,

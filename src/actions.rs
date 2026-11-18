@@ -78,6 +78,16 @@ impl Action {
         })
     }
 
+    /// The domain whose account this action uses, if any.
+    pub fn domain(&self) -> Option<&str> {
+        match self {
+            Action::CopyPassword { domain, .. }
+            | Action::CopyUsername { domain, .. }
+            | Action::GenerateAndSave { domain, .. } => Some(domain),
+            Action::Generate | Action::RequestPin | Action::SubmitPin(_) => None,
+        }
+    }
+
     fn name(&self) -> &'static str {
         match self {
             Action::CopyPassword { .. } => "copy-password",

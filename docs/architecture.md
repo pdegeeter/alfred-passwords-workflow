@@ -51,6 +51,7 @@ username) and ⌥ from `pwgen` (replace an existing password).
 | `apw` | Run `apw`, decode its JSON results and failures into `ApwError` |
 | `alfred` | Build `powerpack::Item`s from accounts, errors and queries |
 | `actions` | Encode actions as Alfred variables, decode them, run them |
+| `domains` | Local index of looked-up domains (`domains.json`), ranked by frecency for autocompletion |
 | `generator` | Apple-format password generation |
 | `clipboard` | `Clipboard` trait; `SystemClipboard` writes to `NSPasteboard` |
 | `runner` | `CommandRunner` trait; `SystemRunner` spawns processes with a timeout |
@@ -65,6 +66,26 @@ carries the `copy-password` action in its variables, and its ⌘ modifier the
 `copy-username` action. A query that is not a domain yet (no dot, or a
 top-level domain under two letters) never calls apw, which keeps keystrokes
 cheap.
+
+**Domain index**: the helper cannot list every account, only the accounts of
+one exact domain, so autocompletion relies on what the workflow has already
+seen. `DomainIndex` lives in `domains.json` under Alfred's
+`alfred_workflow_data` folder and holds, per domain, a use count and the last
+time it was seen.
+
+- A lookup that returns accounts adds the domain (`DomainIndex::observe`); one
+  that returns none removes it, so a mistyped or emptied domain disappears. A
+  failed lookup (daemon down) changes nothing. The file is only rewritten when
+  the index changes, not on every keystroke.
+- A successful `run` on an account (copy, save) counts one use of its domain
+  (`record_use`).
+- `pw` alone, and a query that is not a domain yet, list the known domains
+  containing the input (`suggest`): label prefixes first (`hub` ranks
+  `hub.docker.com` above `github.com`), then by frecency, `(uses + 1)` halved
+  every 30 days. A complete domain without accounts (`github.co`) also lists
+  the known domains containing it, above the "No account found" item.
+- Suggestion items are invalid with an `autocomplete` of `"<domain> "`, so ↵ or
+  ⇥ completes the query and triggers the lookup.
 
 **Generate** (`pwgen github.com me`): `query::parse_generate` returns
 `Save { domain, username }` → `apw pw list` tells whether `me` already exists
@@ -95,6 +116,10 @@ the notification text that `main` prints.
   item that says how to fix it (install, start the daemon, pair). The `run`
   action prints its failures for the notification.
 - **No `uid`.** Alfred would re-sort items by usage; the order is deliberate.
+- **The index stores domains only.** Usernames would make suggestions one
+  step shorter but would leave identifiers in clear on disk. A missing or
+  malformed `domains.json` is an empty index, and a failure to save it only
+  goes to Alfred's debugger: suggestions are best-effort.
 - **Timeouts.** Every apw call is bounded (`Apw::TIMEOUT`, 30 s, enough for a
   Touch ID prompt); a hung apw is killed and reported.
 - **apw status codes.** `3` is "no results" (an empty list, not an error).

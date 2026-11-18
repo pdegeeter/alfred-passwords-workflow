@@ -164,9 +164,56 @@ fn saving_when_apw_fails_shows_the_error_and_still_offers_generation() {
 
 #[test]
 fn hint_items_are_not_actionable() {
-    assert_eq!(to_json(&alfred::empty_search()[0])["valid"], false);
+    let empty = alfred::empty_search(Vec::new());
+    assert_eq!(empty.len(), 1);
+    assert_eq!(to_json(&empty[0])["title"], "Search Apple Passwords");
+    assert_eq!(to_json(&empty[0])["valid"], false);
+
+    let incomplete = alfred::incomplete_search("githu", Vec::new());
+    assert_eq!(incomplete.len(), 1);
     assert_eq!(
-        to_json(&alfred::incomplete_search("githu")[0])["valid"],
-        false
+        to_json(&incomplete[0])["title"],
+        "Keep typing a domain: githu…"
     );
+    assert_eq!(to_json(&incomplete[0])["valid"], false);
+}
+
+#[test]
+fn domain_suggestions_complete_the_query_to_the_domain() {
+    let items = alfred::domain_suggestions(vec!["github.com".to_owned()]);
+    let item = to_json(&items[0]);
+
+    assert_eq!(item["title"], "github.com");
+    assert_eq!(item["subtitle"], "↵ or ⇥ to list its accounts");
+    // The trailing space makes the completed query a domain lookup.
+    assert_eq!(item["autocomplete"], "github.com ");
+    // Invalid, so ↵ completes the query instead of running an action.
+    assert_eq!(item["valid"], false);
+    assert!(item.get("variables").is_none());
+}
+
+#[test]
+fn an_empty_search_lists_known_domains_before_the_hint() {
+    let items = alfred::empty_search(vec!["github.com".to_owned(), "gitlab.com".to_owned()]);
+    let titles: Vec<Value> = items
+        .iter()
+        .map(|item| to_json(item)["title"].clone())
+        .collect();
+
+    assert_eq!(
+        titles,
+        vec![
+            json!("github.com"),
+            json!("gitlab.com"),
+            json!("Search Apple Passwords")
+        ]
+    );
+}
+
+#[test]
+fn an_incomplete_search_lists_matching_domains_instead_of_the_hint() {
+    let items = alfred::incomplete_search("git", vec!["github.com".to_owned()]);
+
+    assert_eq!(items.len(), 1);
+    assert_eq!(to_json(&items[0])["title"], "github.com");
 }

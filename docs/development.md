@@ -60,6 +60,13 @@ cargo build
 # Accounts for a domain (needs apw running and paired)
 ./target/debug/alfred-passwords search github.com | python3 -m json.tool
 
+# Domain index: Alfred passes its data folder in alfred_workflow_data; without
+# it, nothing is indexed or suggested
+export alfred_workflow_data=/tmp/alfred-passwords-data
+./target/debug/alfred-passwords search github.com > /dev/null  # indexes github.com
+./target/debug/alfred-passwords search gith | python3 -m json.tool  # suggests it
+cat /tmp/alfred-passwords-data/domains.json
+
 # Pairing items
 ./target/debug/alfred-passwords search "pin 123456" | python3 -m json.tool
 
@@ -84,6 +91,7 @@ suite runs offline, without apw, a browser or iCloud.
 | Test file | Covers |
 | --- | --- |
 | `tests/query_test.rs` | Domain normalisation; `pw` and `pwgen` query parsing, pin commands. |
+| `tests/domains_test.rs` | Domain index: remember / forget / use counts, suggestion ranking (label prefix, frecency, ties, limit), atomic save, domains-only file, malformed file. |
 | `tests/apw_test.rs` | The `apw` commands run; JSON decoding; status 3 / 9 / unpaired; missing binary; timeout; password on stdin only; binary resolution. |
 | `tests/alfred_test.rs` | JSON shape of items: variables, ⌘ / ⌥ modifiers, filters, error items; no password in items. |
 | `tests/actions_test.rs` | Variables round trip; each action against the fakes; nothing copied when saving or generating fails. |

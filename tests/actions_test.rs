@@ -49,6 +49,18 @@ fn every_action_round_trips_through_its_variables() {
 }
 
 #[test]
+fn only_account_actions_have_a_domain() {
+    let account = Action::CopyUsername {
+        domain: "github.com".to_owned(),
+        username: "me".to_owned(),
+    };
+
+    assert_eq!(account.domain(), Some("github.com"));
+    assert_eq!(Action::Generate.domain(), None);
+    assert_eq!(Action::SubmitPin("123456".to_owned()).domain(), None);
+}
+
+#[test]
 fn from_variables_rejects_missing_or_unknown_values() {
     let missing = Action::from_variables(|_| None).unwrap_err();
     assert_eq!(missing.to_string(), "missing the `action` variable");
